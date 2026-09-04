@@ -1,0 +1,1 @@
+Backend tests will cover candidate filtering, RBAC, assignment conflicts, and job status transitions in the next implementation phase.

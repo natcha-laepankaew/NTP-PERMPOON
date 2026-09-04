@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.py[cod]
+frontend/node_modules/
+frontend/dist/
+backend/.pytest_cache/
+.pytest_cache/
+.vscode/
+delivery_management_system_prompt.txt
+Prompt_ ออกแบบ UI-UX ระบบ Delivery Management System.md
+README.md
