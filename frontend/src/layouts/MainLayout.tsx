@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { Header } from "./Header";
 import { Sidebar } from "./Sidebar";
+import { Outlet } from "react-router-dom";
 
-export function MainLayout({
-  children,
-}: Readonly<{ children: React.ReactNode }>) {
+export function MainLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   return (
     <div className="app-shell">
@@ -19,7 +18,9 @@ export function MainLayout({
       )}
       <main className="main-area">
         <Header onMenuOpen={() => setMobileOpen(true)} />
-        <div className="page-content">{children}</div>
+        <div className="page-content">
+          <Outlet />
+        </div>
       </main>
     </div>
   );
