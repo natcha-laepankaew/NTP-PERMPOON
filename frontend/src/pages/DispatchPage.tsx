@@ -3,6 +3,7 @@ import { ClipboardList, Search, ShieldCheck, Truck } from "lucide-react";
 import { getCandidates, type Candidate } from "../services/api";
 import { AssignModal } from "../components/AssignModal";
 import { CandidateCard } from "../components/CandidateCard";
+import { CreateJobModal } from "../components/CreateJobModal";
 import { PageHeading } from "../components/PageHeading";
 
 export function DispatchPage() {
@@ -14,6 +15,8 @@ export function DispatchPage() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
   const [selected, setSelected] = useState<Candidate | null>(null);
+  const [createJobOpen, setCreateJobOpen] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
   async function search() {
     setLoading(true);
     setSearched(true);
@@ -66,7 +69,10 @@ export function DispatchPage() {
         title="Dispatch Board"
         description="Find the right vehicle for an external job in seconds."
         action={
-          <button className="button button-primary">
+          <button
+            className="button button-primary"
+            onClick={() => setCreateJobOpen(true)}
+          >
             <ClipboardList size={17} /> Create job
           </button>
         }
@@ -151,8 +157,21 @@ export function DispatchPage() {
         </div>
         {renderResults()}
       </section>
+      {successMessage && (
+        <output className="toast-success">✓ {successMessage}</output>
+      )}
       {selected && (
         <AssignModal candidate={selected} onClose={() => setSelected(null)} />
+      )}
+      {createJobOpen && (
+        <CreateJobModal
+          onClose={() => setCreateJobOpen(false)}
+          onCreated={(jobId) => {
+            setCreateJobOpen(false);
+            setSuccessMessage(`Job ${jobId} created successfully`);
+            setTimeout(() => setSuccessMessage(""), 4000);
+          }}
+        />
       )}
     </>
   );

@@ -1,6 +1,8 @@
 from enum import Enum
 
-from sqlalchemy import ForeignKey, String
+from datetime import datetime
+
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -14,6 +16,24 @@ class VehicleStatus(str, Enum):
     AVAILABLE_RETURN = "AVAILABLE_RETURN"
     NOT_READY = "NOT_READY"
     MAINTENANCE = "MAINTENANCE"
+
+
+class JobSource(str, Enum):
+    EXTERNAL = "EXTERNAL"
+    INTERNAL = "INTERNAL"
+
+
+class JobType(str, Enum):
+    ONE_WAY = "ONE_WAY"
+    ROUND_TRIP = "ROUND_TRIP"
+
+
+class JobStatus(str, Enum):
+    CREATED = "CREATED"
+    ASSIGNED = "ASSIGNED"
+    IN_PROGRESS = "IN_PROGRESS"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 
 class Employee(Base):
@@ -36,3 +56,19 @@ class Vehicle(Base):
     ready_from: Mapped[str | None] = mapped_column(String(120), nullable=True)
     current_destination: Mapped[str | None] = mapped_column(String(120), nullable=True)
     employee: Mapped[Employee | None] = relationship(back_populates="vehicle")
+
+
+class Job(Base):
+    __tablename__ = "jobs"
+
+    id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    source: Mapped[JobSource] = mapped_column(default=JobSource.EXTERNAL, nullable=False)
+    origin: Mapped[str] = mapped_column(String(120), nullable=False)
+    destination: Mapped[str] = mapped_column(String(120), nullable=False)
+    pickup_date: Mapped[str] = mapped_column(String(20), nullable=False)
+    pickup_time: Mapped[str] = mapped_column(String(10), nullable=False)
+    customer_reference: Mapped[str | None] = mapped_column(String(160), nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
+    job_type: Mapped[JobType] = mapped_column(default=JobType.ONE_WAY, nullable=False)
+    status: Mapped[JobStatus] = mapped_column(default=JobStatus.CREATED, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

@@ -1249,6 +1249,99 @@ button {
   font-size: 10px;
   margin: 0;
 }
+.create-job-modal {
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+}
+.job-form {
+  margin-top: 20px;
+}
+.job-form fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0 0 18px;
+  display: flex;
+  gap: 18px;
+}
+.job-form legend {
+  color: #777e91;
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 9px;
+}
+.radio-option {
+  color: #40465a;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.radio-option input {
+  accent-color: #172875;
+}
+.job-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.job-form-field {
+  display: block;
+  color: #777e91;
+  font-size: 10px;
+  font-weight: 600;
+  margin-bottom: 14px;
+}
+.job-form-field > span {
+  display: block;
+  margin-bottom: 7px;
+}
+.job-form-field input,
+.job-form-field select,
+.job-form-field textarea {
+  display: block;
+  width: 100%;
+  border: 1px solid #dfe2ea;
+  border-radius: 5px;
+  background: #fff;
+  padding: 10px;
+  font-size: 12px;
+  color: #20243b;
+  outline: none;
+  resize: vertical;
+}
+.job-form-field input:focus,
+.job-form-field select:focus,
+.job-form-field textarea:focus {
+  border-color: #6272c3;
+  box-shadow: 0 0 0 3px rgba(98, 114, 195, 0.1);
+}
+.toast-success {
+  position: fixed;
+  right: 28px;
+  bottom: 28px;
+  z-index: 60;
+  background: #0d774f;
+  color: #fff;
+  border-radius: 7px;
+  padding: 13px 16px;
+  font-size: 12px;
+  box-shadow: 0 10px 25px rgba(13, 119, 79, 0.25);
+}
+@media (max-width: 700px) {
+  .job-form-grid {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .job-form fieldset {
+    flex-direction: column;
+    gap: 9px;
+  }
+  .toast-success {
+    left: 17px;
+    right: 17px;
+    bottom: 17px;
+  }
+}
 @media (max-width: 760px) {
   .login-shell {
     display: block;

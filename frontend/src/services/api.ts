@@ -30,6 +30,17 @@ export type Dashboard = {
   completed_jobs: number;
 };
 
+export type CreateJobPayload = {
+  source: "EXTERNAL" | "INTERNAL";
+  origin: string;
+  destination: string;
+  pickup_date: string;
+  pickup_time: string;
+  customer_reference?: string;
+  notes?: string;
+  job_type: "ONE_WAY" | "ROUND_TRIP";
+};
+
 export async function getDashboard() {
   const { data } = await api.get<Dashboard>("/dashboard/manager");
   return data;
@@ -45,5 +56,15 @@ export async function getCandidates(params: {
     "/dispatch/candidates",
     { params },
   );
+  return data;
+}
+
+export async function createJob(payload: CreateJobPayload) {
+  const { data } = await api.post<{
+    id: string;
+    status: string;
+    origin: string;
+    destination: string;
+  }>("/jobs", payload);
   return data;
 }

@@ -1,13 +1,16 @@
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+import secrets
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel, Field
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from .config import settings
-from .models import Base, Employee, Vehicle, VehicleStatus
+from .models import Base, Employee, Job, JobSource, JobStatus, JobType, Vehicle, VehicleStatus
 from .seed import seed_database
 
 engine = create_engine(settings.database_url, pool_pre_ping=True)
@@ -39,9 +42,30 @@ def get_db():
 DbSession = Annotated[Session, Depends(get_db)]
 
 
+class CreateJobRequest(BaseModel):
+    source: JobSource = JobSource.EXTERNAL
+    origin: str = Field(min_length=1, max_length=120)
+    destination: str = Field(min_length=1, max_length=120)
+    pickup_date: str = Field(min_length=1, max_length=20)
+    pickup_time: str = Field(min_length=1, max_length=10)
+    customer_reference: str | None = Field(default=None, max_length=160)
+    notes: str | None = Field(default=None, max_length=1000)
+    job_type: JobType = JobType.ONE_WAY
+
+
 @app.get("/api/v1/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "ntp-permpoon-api"}
+
+
+@app.post("/api/v1/jobs", status_code=201)
+def create_job(payload: CreateJobRequest, db: DbSession) -> dict:
+    job_id = f"JOB-{datetime.now(timezone.utc):%Y%m%d}-{secrets.token_hex(3).upper()}"
+    job = Job(id=job_id, **payload.model_dump(), status=JobStatus.CREATED)
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    return {"id": job.id, "status": job.status.value, "origin": job.origin, "destination": job.destination}
 
 
 @app.get("/api/v1/dashboard/manager")
