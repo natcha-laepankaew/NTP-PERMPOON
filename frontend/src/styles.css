@@ -1016,6 +1016,232 @@ button {
   grid-template-columns: minmax(360px, 1fr) minmax(420px, 0.85fr);
   background: #f6f7fb;
 }
+.history-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 13px;
+  margin-bottom: 16px;
+}
+.history-summary > div {
+  background: #fff;
+  border: 1px solid #e7e9ef;
+  border-radius: 8px;
+  padding: 16px 18px;
+}
+.history-summary span,
+.history-summary strong,
+.history-summary small {
+  display: block;
+}
+.history-summary span {
+  color: #7e8496;
+  font-size: 11px;
+}
+.history-summary strong {
+  color: #171b32;
+  font: 700 25px "Space Grotesk";
+  margin: 6px 0 2px;
+}
+.history-summary small {
+  color: #9a9faf;
+  font-size: 10px;
+}
+.summary-green {
+  color: #16875e !important;
+}
+.summary-amber {
+  color: #b7730d !important;
+}
+.history-filter-heading,
+.table-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 21px;
+  border-bottom: 1px solid #eff0f4;
+}
+.search-title.compact {
+  margin: 0;
+}
+.history-filter-heading .text-button {
+  color: #5969aa;
+}
+.history-filters {
+  display: grid;
+  grid-template-columns: 1.5fr repeat(4, 1fr) 1fr;
+  gap: 11px;
+  padding: 18px 21px 20px;
+}
+.history-filters label,
+.history-filter-field {
+  color: #777e91;
+  font-size: 10px;
+  font-weight: 600;
+}
+.history-filters input,
+.history-filters select,
+.date-filter {
+  display: block;
+  width: 100%;
+  margin-top: 7px;
+  border: 1px solid #dfe2ea;
+  border-radius: 5px;
+  background: #fff;
+  padding: 10px;
+  color: #20243b;
+  font-size: 11px;
+}
+.history-filters .input-with-icon {
+  margin-top: 7px;
+  padding: 0 10px;
+}
+.history-filters .input-with-icon input {
+  border: 0;
+  margin: 0;
+  padding: 10px 0;
+}
+.date-filter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #525b77;
+}
+.history-table-panel {
+  margin-top: 16px;
+}
+.table-heading h2 {
+  font: 600 17px "Space Grotesk";
+  margin: 5px 0 0;
+}
+.history-table-wrap {
+  overflow-x: auto;
+}
+.history-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+.history-table th {
+  padding: 12px 17px;
+  background: #fafbfc;
+  color: #9298a9;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.7px;
+  text-align: left;
+  text-transform: uppercase;
+}
+.history-table td {
+  padding: 15px 17px;
+  border-top: 1px solid #eff0f4;
+  color: #34394d;
+  font-size: 11px;
+  white-space: nowrap;
+}
+.history-table td strong,
+.history-table td span {
+  display: block;
+}
+.history-table td strong {
+  font-size: 11px;
+}
+.history-table td:nth-child(2) span {
+  color: #8c92a3;
+  margin-top: 4px;
+}
+.job-link {
+  color: #5363a7 !important;
+  font: 600 10px "Space Grotesk" !important;
+}
+.route-arrow {
+  display: inline !important;
+  color: #9aa1b0;
+  font-weight: 400 !important;
+}
+.type-label {
+  color: #6c7390;
+  font: 600 9px "Space Grotesk";
+}
+.date-label,
+.duration-label {
+  color: #70778b;
+  font-size: 10px !important;
+}
+.table-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 21px;
+  border-top: 1px solid #eff0f4;
+  color: #8d93a4;
+  font-size: 10px;
+}
+.pagination {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pagination .icon-button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+.page-number {
+  border: 0;
+  background: transparent;
+  color: #737b91;
+  border-radius: 4px;
+  min-width: 26px;
+  height: 26px;
+  font-size: 10px;
+}
+.page-number.active {
+  background: #111b61;
+  color: #fff;
+}
+.history-empty {
+  margin: 18px;
+}
+.result-note {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+@media (max-width: 1050px) {
+  .history-summary {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .history-filters {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .history-summary {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 9px;
+  }
+  .history-summary > div {
+    padding: 13px;
+  }
+  .history-summary strong {
+    font-size: 21px;
+  }
+  .history-filter-heading,
+  .table-heading {
+    padding: 16px;
+  }
+  .history-filters {
+    grid-template-columns: 1fr;
+    padding: 16px;
+  }
+  .table-footer {
+    padding: 13px 16px;
+  }
+  .table-footer > span {
+    max-width: 130px;
+    line-height: 1.4;
+  }
+}
 .login-visual {
   background: #050d3b;
   color: #fff;

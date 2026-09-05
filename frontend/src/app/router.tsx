@@ -3,6 +3,7 @@ import { MainLayout } from "../layouts/MainLayout";
 import { DashboardPage } from "../pages/DashboardPage";
 import { DispatchPage } from "../pages/DispatchPage";
 import { LoginPage } from "../pages/LoginPage";
+import { HistoryPage } from "../pages/HistoryPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
 
 export function AppRouter() {
@@ -12,6 +13,7 @@ export function AppRouter() {
       <Route element={<MainLayout />}>
         <Route path="/" element={<DashboardPage />} />
         <Route path="/dispatch" element={<DispatchPage />} />
+        <Route path="/history" element={<HistoryPage />} />
         <Route path="*" element={<PlaceholderPage />} />
       </Route>
     </Routes>
