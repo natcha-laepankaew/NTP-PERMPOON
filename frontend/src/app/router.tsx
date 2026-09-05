@@ -4,6 +4,7 @@ import { DashboardPage } from "../pages/DashboardPage";
 import { DispatchPage } from "../pages/DispatchPage";
 import { LoginPage } from "../pages/LoginPage";
 import { HistoryPage } from "../pages/HistoryPage";
+import { JobsPage } from "../pages/JobsPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
 
 export function AppRouter() {
@@ -14,6 +15,7 @@ export function AppRouter() {
         <Route path="/" element={<DashboardPage />} />
         <Route path="/dispatch" element={<DispatchPage />} />
         <Route path="/history" element={<HistoryPage />} />
+        <Route path="/jobs" element={<JobsPage />} />
         <Route path="*" element={<PlaceholderPage />} />
       </Route>
     </Routes>

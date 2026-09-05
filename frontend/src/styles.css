@@ -3,6 +3,230 @@
 @tailwind components;
 @tailwind utilities;
 
+.job-status-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+.job-summary {
+  border: 1px solid #e5e7ef;
+  border-radius: 8px;
+  background: #fff;
+  padding: 14px 15px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  color: #777e91;
+}
+.job-summary:hover,
+.job-summary.active {
+  border-color: #5363a7;
+  box-shadow: 0 5px 15px rgba(21, 31, 94, 0.07);
+}
+.job-summary.active {
+  box-shadow: inset 3px 0 #fff100;
+}
+.job-summary > div > span,
+.job-summary > div > strong {
+  display: block;
+}
+.job-summary > div > span {
+  font-size: 10px;
+}
+.job-summary > div > strong {
+  color: #20243b;
+  font: 700 21px "Space Grotesk";
+  margin-top: 4px;
+}
+.summary-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #111b61;
+}
+.summary-dot.slate {
+  background: #86909e;
+}
+.summary-dot.blue {
+  background: #4f7cde;
+}
+.summary-dot.amber {
+  background: #e8a43d;
+}
+.summary-dot.green {
+  background: #25b987;
+}
+.jobs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 15px 18px;
+}
+.jobs-search {
+  flex: 1;
+  margin: 0;
+  padding: 0 11px;
+}
+.jobs-search input {
+  padding: 10px 0;
+}
+.filter-active {
+  background: #eef1ff;
+  border-color: #7080c4;
+}
+.jobs-filter-panel {
+  display: flex;
+  align-items: end;
+  gap: 13px;
+  padding: 16px 18px;
+  margin-top: 10px;
+}
+.jobs-filter-panel label {
+  flex: 1;
+  color: #777e91;
+  font-size: 10px;
+  font-weight: 600;
+}
+.jobs-filter-panel label span {
+  display: block;
+  margin-bottom: 7px;
+}
+.jobs-filter-panel select {
+  width: 100%;
+  padding: 9px;
+  border: 1px solid #dfe2ea;
+  border-radius: 5px;
+  background: #fff;
+  font-size: 11px;
+}
+.jobs-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 13px;
+  margin-top: 16px;
+}
+.job-card {
+  padding: 17px;
+}
+.job-card-id {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.job-card-id > span:first-child {
+  color: #5363a7;
+  font: 600 10px "Space Grotesk";
+}
+.job-route {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 21px 0 18px;
+}
+.job-route > div {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  flex: 1;
+  color: #778094;
+}
+.job-route svg {
+  color: #5368b6;
+  margin-top: 2px;
+}
+.job-route span,
+.job-route strong,
+.job-card-assignment span,
+.job-card-assignment strong {
+  display: block;
+}
+.job-route span,
+.job-card-assignment span {
+  color: #9a9faf;
+  font-size: 10px;
+}
+.job-route strong {
+  color: #252a42;
+  font-size: 13px;
+  margin-top: 4px;
+}
+.route-chevron {
+  color: #b0b5c3;
+  flex: 0 0 auto;
+}
+.job-card-assignment {
+  border-top: 1px solid #eff0f4;
+  border-bottom: 1px solid #eff0f4;
+  padding: 13px 0;
+  display: flex;
+  gap: 35px;
+}
+.job-card-assignment > div {
+  display: flex;
+  gap: 7px;
+  color: #7784b4;
+}
+.job-card-assignment strong {
+  color: #34394d;
+  font-size: 11px;
+  margin-top: 3px;
+}
+.job-card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 13px;
+  color: #7d8498;
+  font: 600 9px "Space Grotesk";
+}
+.job-card-meta span:nth-child(2) {
+  font: 400 10px "DM Sans";
+}
+.job-card-meta .icon-button {
+  margin-left: auto;
+}
+@media (max-width: 1050px) {
+  .job-status-strip {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  .jobs-list {
+    grid-template-columns: 1fr;
+  }
+}
+@media (max-width: 700px) {
+  .job-status-strip {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .job-summary {
+    padding: 11px;
+  }
+  .jobs-toolbar {
+    align-items: stretch;
+    flex-wrap: wrap;
+  }
+  .jobs-search {
+    flex-basis: 100%;
+  }
+  .jobs-toolbar .result-note {
+    margin-left: auto;
+  }
+  .jobs-filter-panel {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .jobs-list {
+    margin-top: 12px;
+  }
+  .job-card {
+    padding: 15px;
+  }
+  .job-card-assignment {
+    gap: 15px;
+  }
+}
 :root {
   font-family: "DM Sans", sans-serif;
   color: #14172a;
