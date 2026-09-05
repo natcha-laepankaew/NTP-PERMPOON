@@ -6,6 +6,7 @@ import { LoginPage } from "../pages/LoginPage";
 import { HistoryPage } from "../pages/HistoryPage";
 import { JobsPage } from "../pages/JobsPage";
 import { EmployeesPage } from "../pages/EmployeesPage";
+import { VehiclesPage } from "../pages/VehiclesPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
 
 export function AppRouter() {
@@ -18,6 +19,7 @@ export function AppRouter() {
         <Route path="/history" element={<HistoryPage />} />
         <Route path="/jobs" element={<JobsPage />} />
         <Route path="/employees" element={<EmployeesPage />} />
+        <Route path="/vehicles" element={<VehiclesPage />} />
         <Route path="*" element={<PlaceholderPage />} />
       </Route>
     </Routes>
