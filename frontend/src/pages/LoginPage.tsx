@@ -11,6 +11,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useNavigate } from "react-router-dom";
+import { login } from "../services/api";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -31,10 +32,16 @@ export function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  async function onSubmit(_: LoginForm) {
+  async function onSubmit(values: LoginForm) {
     setSubmitError("");
-    await new Promise((resolve) => setTimeout(resolve, 350));
-    navigate("/", { replace: true });
+    try {
+      const session = await login(values.email, values.password);
+      navigate(session.profile_completed ? "/" : "/complete-profile", {
+        replace: true,
+      });
+    } catch {
+      setSubmitError("Invalid email or password.");
+    }
   }
 
   return (

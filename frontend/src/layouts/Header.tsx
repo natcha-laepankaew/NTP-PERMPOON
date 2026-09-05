@@ -1,5 +1,6 @@
 import { Bell, ChevronRight, LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { logout } from "../services/api";
 
 export function Header({ onMenuOpen }: Readonly<{ onMenuOpen: () => void }>) {
   const navigation = useNavigate();
@@ -33,7 +34,10 @@ export function Header({ onMenuOpen }: Readonly<{ onMenuOpen: () => void }>) {
           className="icon-button"
           title="Sign out"
           aria-label="Sign out"
-          onClick={() => navigation("/")}
+          onClick={() => {
+            logout();
+            navigation("/login", { replace: true });
+          }}
         >
           <LogOut size={18} />
         </button>

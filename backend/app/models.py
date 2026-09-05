@@ -2,12 +2,61 @@ from enum import Enum
 
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, String
+from sqlalchemy import DateTime, ForeignKey, String, Table, Column
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):
     pass
+
+
+user_roles = Table(
+    "user_roles", Base.metadata,
+    Column("user_id", ForeignKey("users.id", ondelete="CASCADE"), primary_key=True),
+    Column("role_id", ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
+)
+
+role_permissions = Table(
+    "role_permissions", Base.metadata,
+    Column("role_id", ForeignKey("roles.id", ondelete="CASCADE"), primary_key=True),
+    Column("permission_id", ForeignKey("permissions.id", ondelete="CASCADE"), primary_key=True),
+)
+
+
+class Role(Base):
+    __tablename__ = "roles"
+
+    id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    name: Mapped[str] = mapped_column(String(30), unique=True, nullable=False)
+    description: Mapped[str] = mapped_column(String(240), nullable=False)
+    is_system_role: Mapped[bool] = mapped_column(default=True, nullable=False)
+    users: Mapped[list["User"]] = relationship(secondary=user_roles, back_populates="roles")
+    permissions: Mapped[list["Permission"]] = relationship(secondary=role_permissions, back_populates="roles")
+
+
+class Permission(Base):
+    __tablename__ = "permissions"
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    code: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    module: Mapped[str] = mapped_column(String(50), nullable=False)
+    action: Mapped[str] = mapped_column(String(40), nullable=False)
+    scope: Mapped[str | None] = mapped_column(String(20), nullable=True)
+    description: Mapped[str] = mapped_column(String(240), nullable=False)
+    roles: Mapped[list[Role]] = relationship(secondary=role_permissions, back_populates="permissions")
+
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    email: Mapped[str] = mapped_column(String(160), unique=True, nullable=False)
+    password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
+    is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
+    profile_completed: Mapped[bool] = mapped_column(default=True, nullable=False)
+    employee_id: Mapped[str | None] = mapped_column(ForeignKey("employees.id"), unique=True, nullable=True)
+    roles: Mapped[list[Role]] = relationship(secondary=user_roles, back_populates="users")
+    employee: Mapped["Employee | None"] = relationship()
 
 
 class VehicleStatus(str, Enum):

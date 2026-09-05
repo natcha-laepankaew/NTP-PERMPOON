@@ -3,18 +3,17 @@ from datetime import datetime, timezone
 import secrets
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, Query
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from sqlalchemy import create_engine, select
-from sqlalchemy.orm import Session, sessionmaker
+from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from .config import settings
-from .models import Base, Employee, Job, JobSource, JobStatus, JobType, Vehicle, VehicleStatus
+from .auth import get_current_user, require_permission
+from .database import SessionLocal, get_db
+from .models import Employee, Job, JobSource, JobStatus, JobType, User, Vehicle, VehicleStatus
 from .seed import seed_database
-
-engine = create_engine(settings.database_url, pool_pre_ping=True)
-SessionLocal = sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 
 @asynccontextmanager
@@ -34,11 +33,6 @@ app.add_middleware(
 )
 
 
-def get_db():
-    with SessionLocal() as session:
-        yield session
-
-
 DbSession = Annotated[Session, Depends(get_db)]
 
 
@@ -53,13 +47,33 @@ class CreateJobRequest(BaseModel):
     job_type: JobType = JobType.ONE_WAY
 
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
 @app.get("/api/v1/health")
 def health() -> dict[str, str]:
     return {"status": "ok", "service": "ntp-permpoon-api"}
 
 
+@app.post("/api/v1/auth/login", responses={401: {"description": "Invalid credentials"}})
+def login(payload: LoginRequest, db: DbSession) -> dict:
+    from .security import create_access_token, verify_password
+
+    user = db.scalar(select(User).where(User.email == payload.email.lower()))
+    if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return {"access_token": create_access_token(user.id), "token_type": "bearer", "profile_completed": user.profile_completed, "roles": [role.name for role in user.roles]}
+
+
+@app.get("/api/v1/auth/me")
+def me(current_user: Annotated[User, Depends(get_current_user)]) -> dict:
+    return {"id": current_user.id, "email": current_user.email, "roles": [role.name for role in current_user.roles], "profile_completed": current_user.profile_completed}
+
+
 @app.post("/api/v1/jobs", status_code=201)
-def create_job(payload: CreateJobRequest, db: DbSession) -> dict:
+def create_job(payload: CreateJobRequest, db: DbSession, _: Annotated[User, Depends(require_permission("jobs.create"))]) -> dict:
     job_id = f"JOB-{datetime.now(timezone.utc):%Y%m%d}-{secrets.token_hex(3).upper()}"
     job = Job(id=job_id, **payload.model_dump(), status=JobStatus.CREATED)
     db.add(job)
@@ -69,7 +83,7 @@ def create_job(payload: CreateJobRequest, db: DbSession) -> dict:
 
 
 @app.get("/api/v1/dashboard/manager")
-def manager_dashboard(db: DbSession) -> dict:
+def manager_dashboard(db: DbSession, _: Annotated[User, Depends(require_permission("dashboard.view"))]) -> dict:
     vehicles = db.scalars(select(Vehicle)).all()
     counts = {status.value: 0 for status in VehicleStatus}
     for vehicle in vehicles:
@@ -85,10 +99,11 @@ def manager_dashboard(db: DbSession) -> dict:
 @app.get("/api/v1/dispatch/candidates")
 def dispatch_candidates(
     db: DbSession,
-    origin: str = Query(default=""),
-    employee_name: str = Query(default=""),
-    vehicle_plate: str = Query(default=""),
-    status: VehicleStatus | None = Query(default=None),
+    origin: Annotated[str, Query()] = "",
+    employee_name: Annotated[str, Query()] = "",
+    vehicle_plate: Annotated[str, Query()] = "",
+    status: Annotated[VehicleStatus | None, Query()] = None,
+    _: Annotated[User, Depends(require_permission("dispatch.view"))] = None,
 ) -> dict:
     query = select(Vehicle, Employee).join(Employee, Vehicle.employee_id == Employee.id, isouter=True)
     if status:
@@ -141,7 +156,7 @@ def candidate_response(vehicle: Vehicle, employee: Employee | None) -> dict:
 
 
 @app.get("/api/v1/employees")
-def employees(db: DbSession) -> list[dict]:
+def employees(db: DbSession, _: Annotated[User, Depends(require_permission("employees.view.all"))]) -> list[dict]:
     rows = db.execute(select(Employee, Vehicle).join(Vehicle, Vehicle.employee_id == Employee.id, isouter=True)).all()
     return [
         {

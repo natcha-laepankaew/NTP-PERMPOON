@@ -11,6 +11,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { PageHeading } from "../components/PageHeading";
+import { canMutateOperations } from "../services/api";
 
 type JobStatus =
   | "CREATED"
@@ -103,6 +104,7 @@ const statusMeta: Record<JobStatus, { label: string; color: string }> = {
 };
 
 export function JobsPage() {
+  const canCreateJob = canMutateOperations();
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<JobStatus | "">("");
   const [type, setType] = useState<JobType | "">("");
@@ -129,9 +131,11 @@ export function JobsPage() {
         title="Jobs"
         description="Create, review and track delivery jobs across today's operation."
         action={
-          <button className="button button-primary">
-            <Plus size={17} /> Create job
-          </button>
+          canCreateJob ? (
+            <button className="button button-primary">
+              <Plus size={17} /> Create job
+            </button>
+          ) : undefined
         }
       />
       <section className="job-status-strip">

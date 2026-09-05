@@ -1,12 +1,17 @@
 import { useEffect, useState } from "react";
 import { ClipboardList, Search, ShieldCheck, Truck } from "lucide-react";
-import { getCandidates, type Candidate } from "../services/api";
+import {
+  canMutateOperations,
+  getCandidates,
+  type Candidate,
+} from "../services/api";
 import { AssignModal } from "../components/AssignModal";
 import { CandidateCard } from "../components/CandidateCard";
 import { CreateJobModal } from "../components/CreateJobModal";
 import { PageHeading } from "../components/PageHeading";
 
 export function DispatchPage() {
+  const canCreateJob = canMutateOperations();
   const [origin, setOrigin] = useState("หาดใหญ่");
   const [employee, setEmployee] = useState("");
   const [plate, setPlate] = useState("");
@@ -69,12 +74,14 @@ export function DispatchPage() {
         title="Dispatch Board"
         description="Find the right vehicle for an external job in seconds."
         action={
-          <button
-            className="button button-primary"
-            onClick={() => setCreateJobOpen(true)}
-          >
-            <ClipboardList size={17} /> Create job
-          </button>
+          canCreateJob ? (
+            <button
+              className="button button-primary"
+              onClick={() => setCreateJobOpen(true)}
+            >
+              <ClipboardList size={17} /> Create job
+            </button>
+          ) : undefined
         }
       />
       <section className="dispatch-search panel">
