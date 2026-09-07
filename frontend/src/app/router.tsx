@@ -8,13 +8,27 @@ import { JobsPage } from "../pages/JobsPage";
 import { EmployeesPage } from "../pages/EmployeesPage";
 import { VehiclesPage } from "../pages/VehiclesPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
-import { ProtectedRoute } from "../components/ProtectedRoute";
+import { ProtectedRoute, SuperAdminRoute } from "../components/ProtectedRoute";
+import { RolesPermissionsPage } from "../pages/RolesPermissionsPage";
+import { AuditLogsPage } from "../pages/AuditLogsPage";
+import { CompleteProfilePage } from "../pages/CompleteProfilePage";
 
 export function AppRouter() {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
+        <Route path="/complete-profile" element={<CompleteProfilePage />} />
+        <Route element={<SuperAdminRoute />}>
+          <Route path="/audit-logs" element={<AuditLogsPage />} />
+          <Route element={<SuperAdminRoute />}>
+            <Route
+              path="/settings/roles-permissions"
+              element={<RolesPermissionsPage />}
+            />
+            <Route path="/audit-logs" element={<AuditLogsPage />} />
+          </Route>
+        </Route>
         <Route element={<MainLayout />}>
           <Route path="/" element={<DashboardPage />} />
           <Route path="/dispatch" element={<DispatchPage />} />

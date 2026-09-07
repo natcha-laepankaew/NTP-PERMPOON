@@ -10,11 +10,13 @@ import {
   X,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
+import { hasRole } from "../services/api";
 
 export function Sidebar({
   mobileOpen,
   onClose,
 }: Readonly<{ mobileOpen: boolean; onClose: () => void }>) {
+  const isSuperAdmin = hasRole("SUPER_ADMIN");
   return (
     <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
       <div className="brand">
@@ -74,12 +76,22 @@ export function Sidebar({
           onClick={onClose}
         />
         <p className="nav-label space-top">SYSTEM</p>
-        <NavItem
-          to="/reports"
-          icon={<Activity size={18} />}
-          label="Reports"
-          onClick={onClose}
-        />
+        {isSuperAdmin && (
+          <NavItem
+            to="/settings/roles-permissions"
+            icon={<Settings2 size={18} />}
+            label="Roles & Permissions"
+            onClick={onClose}
+          />
+        )}
+        {isSuperAdmin && (
+          <NavItem
+            to="/audit-logs"
+            icon={<ShieldCheck size={18} />}
+            label="Audit Logs"
+            onClick={onClose}
+          />
+        )}
         <NavItem
           to="/settings"
           icon={<Settings2 size={18} />}

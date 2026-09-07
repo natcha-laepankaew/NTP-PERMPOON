@@ -37,6 +37,13 @@ export function isAuthenticated() {
   return Boolean(localStorage.getItem("ntp_access_token"));
 }
 
+export function hasRole(role: string) {
+  const roles = JSON.parse(
+    localStorage.getItem("ntp_user_roles") ?? "[]",
+  ) as string[];
+  return roles.includes(role);
+}
+
 export function canMutateOperations() {
   const roles = JSON.parse(
     localStorage.getItem("ntp_user_roles") ?? "[]",
@@ -105,5 +112,57 @@ export async function createJob(payload: CreateJobPayload) {
     origin: string;
     destination: string;
   }>("/jobs", payload);
+  return data;
+}
+
+export type RoleRecord = {
+  id: string;
+  name: string;
+  description: string;
+  is_system_role: boolean;
+  users_count: number;
+  permissions: string[];
+};
+export type PermissionRecord = {
+  code: string;
+  module: string;
+  action: string;
+  scope: string | null;
+  description: string;
+};
+
+export async function getRoles() {
+  const { data } = await api.get<RoleRecord[]>("/roles");
+  return data;
+}
+
+export async function getPermissions() {
+  const { data } = await api.get<PermissionRecord[]>("/permissions");
+  return data;
+}
+
+export async function getAuditLogs() {
+  const { data } = await api.get<
+    Array<{
+      id: string;
+      actor_user_id: string | null;
+      action: string;
+      entity: string;
+      entity_id: string | null;
+      metadata: string | null;
+      created_at: string;
+    }>
+  >("/audit-logs");
+  return data;
+}
+
+export async function completeProfile(payload: {
+  phone: string;
+  address: string;
+}) {
+  const { data } = await api.post<{ profile_completed: boolean }>(
+    "/profile/complete",
+    payload,
+  );
   return data;
 }

@@ -54,6 +54,7 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     is_active: Mapped[bool] = mapped_column(default=True, nullable=False)
     profile_completed: Mapped[bool] = mapped_column(default=True, nullable=False)
+    profile_completed_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     employee_id: Mapped[str | None] = mapped_column(ForeignKey("employees.id"), unique=True, nullable=True)
     roles: Mapped[list[Role]] = relationship(secondary=user_roles, back_populates="users")
     employee: Mapped["Employee | None"] = relationship()
@@ -92,6 +93,7 @@ class Employee(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     position: Mapped[str] = mapped_column(String(50), nullable=False, default="DRIVER")
     phone: Mapped[str] = mapped_column(String(30), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     vehicle: Mapped["Vehicle | None"] = relationship(back_populates="employee", uselist=False)
 
 
@@ -120,4 +122,16 @@ class Job(Base):
     notes: Mapped[str | None] = mapped_column(String(1000), nullable=True)
     job_type: Mapped[JobType] = mapped_column(default=JobType.ONE_WAY, nullable=False)
     status: Mapped[JobStatus] = mapped_column(default=JobStatus.CREATED, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[str] = mapped_column(String(40), primary_key=True)
+    actor_user_id: Mapped[str | None] = mapped_column(ForeignKey("users.id"), nullable=True)
+    action: Mapped[str] = mapped_column(String(80), nullable=False)
+    entity: Mapped[str] = mapped_column(String(80), nullable=False)
+    entity_id: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    metadata_json: Mapped[str | None] = mapped_column(String(2000), nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)

@@ -19,7 +19,7 @@ ROLE_DESCRIPTIONS = {"SUPER_ADMIN": "Full system control", "ADMIN": "Create, upd
 ROLE_PERMISSIONS = {
     "SUPER_ADMIN": set(PERMISSION_DEFINITIONS),
     "ADMIN": {code for code in PERMISSION_DEFINITIONS if code not in {"users.view", "users.create", "users.update", "users.delete", "roles.view", "roles.manage", "permissions.view", "permissions.manage", "settings.view", "settings.manage", "audit_logs.view"}},
-    "MANAGER": {code for code in PERMISSION_DEFINITIONS if code.endswith(".view") or ".view." in code or code in {"dashboard.view", "dispatch.view", "reports.view", "profile.view.own"}},
+    "MANAGER": {"dashboard.view", "employees.view.all", "vehicles.view.all", "availability.view.all", "jobs.view.all", "assignments.view.all", "dispatch.view", "evidence.view.all", "job_history.view.all", "reports.view", "profile.view.own"},
     "EMPLOYEE": {"dashboard.view", "employees.view.own", "vehicles.view.own", "availability.view.own", "availability.update.own", "availability.check_in", "jobs.view.own", "jobs.start.own", "jobs.close.own", "jobs.change_destination.own", "assignments.view.own", "evidence.view.own", "evidence.upload.own", "job_history.view.own", "profile.view.own", "profile.complete.own"},
 }
 
