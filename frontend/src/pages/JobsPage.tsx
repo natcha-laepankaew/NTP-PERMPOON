@@ -11,7 +11,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { PageHeading } from "../components/PageHeading";
-import { canMutateOperations } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 type JobStatus =
   | "CREATED"
@@ -104,7 +104,8 @@ const statusMeta: Record<JobStatus, { label: string; color: string }> = {
 };
 
 export function JobsPage() {
-  const canCreateJob = canMutateOperations();
+  const { user } = useAuth();
+  const canCreateJob = user?.permissions.includes("jobs.create") ?? false;
   const [query, setQuery] = useState("");
   const [status, setStatus] = useState<JobStatus | "">("");
   const [type, setType] = useState<JobType | "">("");

@@ -11,7 +11,7 @@ import {
 export function RolesPermissionsPage() {
   const [roles, setRoles] = useState<RoleRecord[]>([]);
   const [permissions, setPermissions] = useState<PermissionRecord[]>([]);
-  const [selected, setSelected] = useState("SUPER_ADMIN");
+  const [selected, setSelected] = useState("ADMINISTRATOR");
   useEffect(() => {
     Promise.all([getRoles(), getPermissions()]).then(
       ([roleData, permissionData]) => {
@@ -42,7 +42,7 @@ export function RolesPermissionsPage() {
         description="Review the permissions assigned to each system role."
         action={
           <span className="system-role-badge">
-            <LockKeyhole size={14} /> SUPER_ADMIN ONLY
+            <LockKeyhole size={14} /> ADMINISTRATOR ONLY
           </span>
         }
       />

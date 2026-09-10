@@ -10,8 +10,9 @@ import {
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { login } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 const loginSchema = z.object({
   email: z.string().email("Please enter a valid email address."),
@@ -19,9 +20,14 @@ const loginSchema = z.object({
 });
 
 type LoginForm = z.infer<typeof loginSchema>;
+type RedirectState = {
+  from?: { pathname: string; search?: string; hash?: string };
+};
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { refresh } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [submitError, setSubmitError] = useState("");
   const {
@@ -36,7 +42,12 @@ export function LoginPage() {
     setSubmitError("");
     try {
       const session = await login(values.email, values.password);
-      navigate(session.profile_completed ? "/" : "/complete-profile", {
+      await refresh();
+      const from = (location.state as RedirectState | null)?.from;
+      const destination = from
+        ? `${from.pathname}${from.search ?? ""}${from.hash ?? ""}`
+        : "/";
+      navigate(session.profile_completed ? destination : "/complete-profile", {
         replace: true,
       });
     } catch {

@@ -1,17 +1,18 @@
 import { useEffect, useState } from "react";
 import { ClipboardList, Search, ShieldCheck, Truck } from "lucide-react";
 import {
-  canMutateOperations,
   getCandidates,
   type Candidate,
 } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 import { AssignModal } from "../components/AssignModal";
 import { CandidateCard } from "../components/CandidateCard";
 import { CreateJobModal } from "../components/CreateJobModal";
 import { PageHeading } from "../components/PageHeading";
 
 export function DispatchPage() {
-  const canCreateJob = canMutateOperations();
+  const { user } = useAuth();
+  const canCreateJob = user?.permissions.includes("jobs.create") ?? false;
   const [origin, setOrigin] = useState("หาดใหญ่");
   const [employee, setEmployee] = useState("");
   const [plate, setPlate] = useState("");

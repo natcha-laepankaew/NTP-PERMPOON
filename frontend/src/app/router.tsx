@@ -8,10 +8,11 @@ import { JobsPage } from "../pages/JobsPage";
 import { EmployeesPage } from "../pages/EmployeesPage";
 import { VehiclesPage } from "../pages/VehiclesPage";
 import { PlaceholderPage } from "../pages/PlaceholderPage";
-import { ProtectedRoute, SuperAdminRoute } from "../components/ProtectedRoute";
+import { ProtectedRoute, RoleRoute } from "../components/ProtectedRoute";
 import { RolesPermissionsPage } from "../pages/RolesPermissionsPage";
 import { AuditLogsPage } from "../pages/AuditLogsPage";
 import { CompleteProfilePage } from "../pages/CompleteProfilePage";
+import { ROLE_ACCESS } from "../auth/roles";
 
 export function AppRouter() {
   return (
@@ -19,23 +20,24 @@ export function AppRouter() {
       <Route path="/login" element={<LoginPage />} />
       <Route element={<ProtectedRoute />}>
         <Route path="/complete-profile" element={<CompleteProfilePage />} />
-        <Route element={<SuperAdminRoute />}>
-          <Route path="/audit-logs" element={<AuditLogsPage />} />
-          <Route element={<SuperAdminRoute />}>
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<DashboardPage />} />
+          <Route element={<RoleRoute allowedRoles={ROLE_ACCESS.operations} />}>
+            <Route path="/dispatch" element={<DispatchPage />} />
+            <Route path="/history" element={<HistoryPage />} />
+            <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/employees" element={<EmployeesPage />} />
+            <Route path="/vehicles" element={<VehiclesPage />} />
+          </Route>
+          <Route
+            element={<RoleRoute allowedRoles={ROLE_ACCESS.administrator} />}
+          >
             <Route
-              path="/settings/roles-permissions"
+              path="/roles-permissions"
               element={<RolesPermissionsPage />}
             />
             <Route path="/audit-logs" element={<AuditLogsPage />} />
           </Route>
-        </Route>
-        <Route element={<MainLayout />}>
-          <Route path="/" element={<DashboardPage />} />
-          <Route path="/dispatch" element={<DispatchPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-          <Route path="/jobs" element={<JobsPage />} />
-          <Route path="/employees" element={<EmployeesPage />} />
-          <Route path="/vehicles" element={<VehiclesPage />} />
           <Route path="*" element={<PlaceholderPage />} />
         </Route>
       </Route>

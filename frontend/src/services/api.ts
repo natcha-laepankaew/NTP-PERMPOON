@@ -1,4 +1,5 @@
 import axios from "axios";
+import type { RoleName } from "../auth/roles";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1",
@@ -15,7 +16,15 @@ export type AuthResponse = {
   access_token: string;
   token_type: string;
   profile_completed: boolean;
-  roles: string[];
+  user: CurrentUser;
+};
+export type CurrentUser = {
+  id: string;
+  email: string;
+  name: string;
+  role: { id: string; name: RoleName };
+  permissions: string[];
+  profile_completed: boolean;
 };
 
 export async function login(email: string, password: string) {
@@ -24,32 +33,17 @@ export async function login(email: string, password: string) {
     password,
   });
   localStorage.setItem("ntp_access_token", data.access_token);
-  localStorage.setItem("ntp_user_roles", JSON.stringify(data.roles));
   return data;
 }
 
 export function logout() {
   localStorage.removeItem("ntp_access_token");
-  localStorage.removeItem("ntp_user_roles");
 }
 
 export function isAuthenticated() {
   return Boolean(localStorage.getItem("ntp_access_token"));
 }
 
-export function hasRole(role: string) {
-  const roles = JSON.parse(
-    localStorage.getItem("ntp_user_roles") ?? "[]",
-  ) as string[];
-  return roles.includes(role);
-}
-
-export function canMutateOperations() {
-  const roles = JSON.parse(
-    localStorage.getItem("ntp_user_roles") ?? "[]",
-  ) as string[];
-  return roles.includes("ADMIN") || roles.includes("SUPER_ADMIN");
-}
 
 export type VehicleStatus =
   | "AVAILABLE"

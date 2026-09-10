@@ -1,252 +1,152 @@
+"""HTTP layer. State transitions and permission checks stay server-side."""
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-import secrets
-import json
+import json, secrets
 from typing import Annotated
-
 from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from sqlalchemy import select
-from sqlalchemy.orm import Session
-
-from .config import settings
+from sqlalchemy import func, select
+from sqlalchemy.orm import Session, selectinload
 from .auth import get_current_user, require_permission
+from .config import settings
 from .database import SessionLocal, get_db
 from .models import AuditLog, Employee, Job, JobSource, JobStatus, JobType, Permission, Role, User, Vehicle, VehicleStatus
 from .seed import seed_database
 
-
 @asynccontextmanager
 async def lifespan(_: FastAPI):
-    with SessionLocal() as session:
-        seed_database(session)
+    with SessionLocal() as db: seed_database(db)
     yield
+app=FastAPI(title="NTP PERMPOON API",version="1.0.0",lifespan=lifespan)
+app.add_middleware(CORSMiddleware,allow_origins=settings.cors_origin_list,allow_credentials=True,allow_methods=["*"],allow_headers=["*"])
+DB=Annotated[Session,Depends(get_db)]
 
+class Login(BaseModel): email:str; password:str
+class JobInput(BaseModel):
+    source:JobSource=JobSource.EXTERNAL; origin:str=Field(min_length=1,max_length=120); destination:str=Field(min_length=1,max_length=120); pickup_date:str; pickup_time:str; customer_reference:str|None=None; notes:str|None=None; job_type:JobType=JobType.ONE_WAY
+class AssignInput(BaseModel): job_id:str; employee_id:str; vehicle_id:str
+class ProfileInput(BaseModel): phone:str=Field(min_length=3); address:str=Field(min_length=3)
+class StatusInput(BaseModel): ready_from:str|None=None
+class DestinationInput(BaseModel): destination:str=Field(min_length=1,max_length=120)
 
-app = FastAPI(title="NTP PERMPOON API", version="0.1.0", lifespan=lifespan)
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=settings.cors_origin_list,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-
-DbSession = Annotated[Session, Depends(get_db)]
-
-
-class CreateJobRequest(BaseModel):
-    source: JobSource = JobSource.EXTERNAL
-    origin: str = Field(min_length=1, max_length=120)
-    destination: str = Field(min_length=1, max_length=120)
-    pickup_date: str = Field(min_length=1, max_length=20)
-    pickup_time: str = Field(min_length=1, max_length=10)
-    customer_reference: str | None = Field(default=None, max_length=160)
-    notes: str | None = Field(default=None, max_length=1000)
-    job_type: JobType = JobType.ONE_WAY
-
-
-class LoginRequest(BaseModel):
-    email: str
-    password: str
-
-
-class CompleteProfileRequest(BaseModel):
-    phone: str = Field(min_length=3, max_length=30)
-    address: str = Field(min_length=3, max_length=300)
-
-
-class CreateEmployeeRequest(BaseModel):
-    employee_id: str = Field(min_length=2, max_length=20)
-    name: str = Field(min_length=2, max_length=120)
-    position: str = Field(min_length=2, max_length=50)
-    email: str = Field(min_length=5, max_length=160)
-    phone: str = Field(min_length=3, max_length=30)
-    password: str = Field(min_length=6, max_length=128)
-
-
-def write_audit(db: Session, actor: User | None, action: str, entity: str, entity_id: str | None = None, metadata: dict | None = None) -> None:
-    db.add(AuditLog(id=f"AUD-{secrets.token_hex(12)}", actor_user_id=actor.id if actor else None, action=action, entity=entity, entity_id=entity_id, metadata_json=json.dumps(metadata or {}, ensure_ascii=False)))
-
+def audit(db,actor,action,entity,entity_id=None,meta=None): db.add(AuditLog(id="AUD-"+secrets.token_hex(12),actor_user_id=actor.id if actor else None,action=action,entity=entity,entity_id=entity_id,metadata_json=json.dumps(meta or {})))
+def user_data(user): return {"id":user.id,"email":user.email,"name":user.employee.name if user.employee else user.email.split("@")[0],"role":{"id":user.role.id,"name":user.role.name},"permissions":[p.code for p in user.role.permissions],"profile_completed":user.profile_completed}
+def job_data(j): return {"id":j.id,"source":j.source.value,"origin":j.origin,"destination":j.destination,"pickup_date":j.pickup_date,"pickup_time":j.pickup_time,"job_type":j.job_type.value,"status":j.status.value,"driver_id":j.driver_id,"vehicle_id":j.vehicle_id}
+def own_job(job,user): return bool(user.employee_id and job.driver_id==user.employee_id)
 
 @app.get("/api/v1/health")
-def health() -> dict[str, str]:
-    return {"status": "ok", "service": "ntp-permpoon-api"}
-
-
-@app.post("/api/v1/auth/login", responses={401: {"description": "Invalid credentials"}})
-def login(payload: LoginRequest, db: DbSession) -> dict:
-    from .security import create_access_token, verify_password
-
-    user = db.scalar(select(User).where(User.email == payload.email.lower()))
-    if not user or not user.is_active or not verify_password(payload.password, user.password_hash):
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    write_audit(db, user, "LOGIN", "USER", user.id)
-    db.commit()
-    return {"access_token": create_access_token(user.id), "token_type": "bearer", "profile_completed": user.profile_completed, "roles": [role.name for role in user.roles]}
-
-
+def health(): return {"status":"ok"}
+@app.post("/api/v1/auth/login")
+def login(payload:Login,db:DB):
+    from .security import create_access_token,verify_password
+    user=db.scalar(select(User).options(selectinload(User.role).selectinload(Role.permissions),selectinload(User.employee)).where(User.email==payload.email.lower()))
+    if not user or not user.is_active or not verify_password(payload.password,user.password_hash): raise HTTPException(401,"Invalid email or password")
+    user.last_login_at=datetime.now(timezone.utc); audit(db,user,"LOGIN","USER",user.id); db.commit()
+    return {"access_token":create_access_token(user.id),"token_type":"bearer","user":user_data(user),"profile_completed":user.profile_completed}
+@app.post("/api/v1/auth/logout")
+def logout(db:DB,user:Annotated[User,Depends(get_current_user)]): audit(db,user,"LOGOUT","USER",user.id);db.commit();return {"ok":True}
+@app.get("/api/v1/users/me")
+def me(user:Annotated[User,Depends(get_current_user)]): return user_data(user)
 @app.get("/api/v1/auth/me")
-def me(current_user: Annotated[User, Depends(get_current_user)]) -> dict:
-    return {"id": current_user.id, "email": current_user.email, "roles": [role.name for role in current_user.roles], "profile_completed": current_user.profile_completed}
+def auth_me(user:Annotated[User,Depends(get_current_user)]): return user_data(user)
 
+@app.post("/api/v1/profile/complete")
+def complete_profile(payload:ProfileInput,db:DB,user:Annotated[User,Depends(require_permission("profile.complete.own"))]):
+    if user.role.name!="DRIVER" or user.profile_completed: raise HTTPException(409,"Profile cannot be completed again")
+    if not user.employee: raise HTTPException(400,"Driver account has no employee")
+    user.employee.phone=payload.phone; user.employee.address=payload.address; user.profile_completed=True; user.profile_completed_at=datetime.now(timezone.utc); audit(db,user,"COMPLETE_PROFILE","USER",user.id);db.commit();return {"profile_completed":True}
 
-@app.post("/api/v1/profile/complete", responses={400: {"description": "Employee profile is not linked"}, 409: {"description": "Profile is already completed"}})
-def complete_profile(payload: CompleteProfileRequest, db: DbSession, current_user: Annotated[User, Depends(get_current_user)]) -> dict:
-    if current_user.profile_completed:
-        raise HTTPException(status_code=409, detail="Profile is already completed")
-    if not current_user.employee:
-        raise HTTPException(status_code=400, detail="Employee profile is not linked")
-    current_user.employee.phone = payload.phone
-    current_user.employee.address = payload.address
-    current_user.profile_completed = True
-    current_user.profile_completed_at = datetime.now(timezone.utc)
-    write_audit(db, current_user, "COMPLETE_PROFILE", "USER", current_user.id)
-    db.commit()
-    return {"profile_completed": True}
-
-
-@app.get("/api/v1/roles")
-def list_roles(db: DbSession, _: Annotated[User, Depends(require_permission("roles.view"))]) -> list[dict]:
-    roles = db.scalars(select(Role)).all()
-    return [{"id": role.id, "name": role.name, "description": role.description, "is_system_role": role.is_system_role, "users_count": len(role.users), "permissions": sorted(permission.code for permission in role.permissions)} for role in roles]
-
-
-@app.get("/api/v1/permissions")
-def list_permissions(db: DbSession, _: Annotated[User, Depends(require_permission("permissions.view"))]) -> list[dict]:
-    return [{"code": item.code, "module": item.module, "action": item.action, "scope": item.scope, "description": item.description} for item in db.scalars(select(Permission).order_by(Permission.module, Permission.code)).all()]
-
-
-@app.get("/api/v1/audit-logs")
-def list_audit_logs(db: DbSession, _: Annotated[User, Depends(require_permission("audit_logs.view"))]) -> list[dict]:
-    logs = db.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(100)).all()
-    return [{"id": log.id, "actor_user_id": log.actor_user_id, "action": log.action, "entity": log.entity, "entity_id": log.entity_id, "metadata": log.metadata_json, "created_at": log.created_at.isoformat()} for log in logs]
-
-
-@app.post("/api/v1/employees", status_code=201, responses={409: {"description": "Employee ID or email already exists"}, 500: {"description": "EMPLOYEE role is not configured"}})
-def create_employee(payload: CreateEmployeeRequest, db: DbSession, actor: Annotated[User, Depends(require_permission("employees.create"))]) -> dict:
-    if db.scalar(select(Employee).where(Employee.id == payload.employee_id)) or db.scalar(select(User).where(User.email == payload.email.lower())):
-        raise HTTPException(status_code=409, detail="Employee ID or email already exists")
-    from .security import hash_password
-    employee = Employee(id=payload.employee_id, name=payload.name, position=payload.position, phone=payload.phone)
-    user = User(id=f"U-{secrets.token_hex(6).upper()}", email=payload.email.lower(), password_hash=hash_password(payload.password), employee_id=payload.employee_id, profile_completed=False)
-    employee_user_role = db.scalar(select(Role).where(Role.name == "EMPLOYEE"))
-    if not employee_user_role:
-        raise HTTPException(status_code=500, detail="EMPLOYEE role is not configured")
-    user.roles = [employee_user_role]
-    db.add_all([employee, user])
-    write_audit(db, actor, "CREATE_EMPLOYEE", "EMPLOYEE", employee.id, {"email": user.email, "position": employee.position})
-    db.commit()
-    return {"id": employee.id, "email": user.email, "profile_completed": False}
-
-
-@app.post("/api/v1/jobs", status_code=201)
-def create_job(payload: CreateJobRequest, db: DbSession, _: Annotated[User, Depends(require_permission("jobs.create"))]) -> dict:
-    job_id = f"JOB-{datetime.now(timezone.utc):%Y%m%d}-{secrets.token_hex(3).upper()}"
-    job = Job(id=job_id, **payload.model_dump(), status=JobStatus.CREATED)
-    db.add(job)
-    db.commit()
-    db.refresh(job)
-    return {"id": job.id, "status": job.status.value, "origin": job.origin, "destination": job.destination}
-
-
-@app.get("/api/v1/dashboard/manager")
-def manager_dashboard(db: DbSession, _: Annotated[User, Depends(require_permission("dashboard.view"))]) -> dict:
-    vehicles = db.scalars(select(Vehicle)).all()
-    counts = {status.value: 0 for status in VehicleStatus}
-    for vehicle in vehicles:
-        counts[vehicle.status.value] += 1
-    return {
-        "counts": counts,
-        "today_jobs": 42,
-        "active_jobs": 15,
-        "completed_jobs": 27,
-    }
-
+@app.get("/api/v1/dashboard")
+def dashboard(db:DB,user:Annotated[User,Depends(require_permission("dashboard.view"))]):
+    if user.role.name=="DRIVER":
+        jobs=db.scalars(select(Job).where(Job.driver_id==user.employee_id)).all(); vehicle=db.scalar(select(Vehicle).where(Vehicle.employee_id==user.employee_id,Vehicle.is_primary==True)); return {"role":"DRIVER","my_jobs":[job_data(x) for x in jobs],"vehicle":vehicle.status.value if vehicle else None}
+    counts={s.value:db.scalar(select(func.count()).select_from(Vehicle).where(Vehicle.status==s)) for s in VehicleStatus}
+    return {"role":user.role.name,"vehicle_counts":counts,"created_jobs":db.scalar(select(func.count()).select_from(Job).where(Job.status==JobStatus.CREATED)),"active_jobs":db.scalar(select(func.count()).select_from(Job).where(Job.status.in_([JobStatus.ASSIGNED,JobStatus.IN_PROGRESS])))}
 
 @app.get("/api/v1/jobs")
-def list_jobs(db: DbSession, _: Annotated[User, Depends(require_permission("jobs.view.all"))]) -> list[dict]:
-    return [{"id": job.id, "origin": job.origin, "destination": job.destination, "source": job.source.value, "job_type": job.job_type.value, "status": job.status.value, "pickup_date": job.pickup_date, "pickup_time": job.pickup_time} for job in db.scalars(select(Job).order_by(Job.created_at.desc())).all()]
-
-
-@app.get("/api/v1/vehicles")
-def list_vehicles(db: DbSession, _: Annotated[User, Depends(require_permission("vehicles.view.all"))]) -> list[dict]:
-    rows = db.execute(select(Vehicle, Employee).join(Employee, Vehicle.employee_id == Employee.id, isouter=True)).all()
-    return [{"id": vehicle.id, "plate": vehicle.plate, "employee": employee.name if employee else None, "status": vehicle.status.value, "ready_from": vehicle.ready_from, "current_destination": vehicle.current_destination} for vehicle, employee in rows]
-
+def jobs(db:DB,user:Annotated[User,Depends(get_current_user)]):
+    allowed={p.code for p in user.role.permissions}; q=select(Job).order_by(Job.created_at.desc())
+    if "jobs.view.all" not in allowed:
+        if "jobs.view.own" not in allowed: raise HTTPException(403,"Missing permission: jobs.view.all")
+        q=q.where(Job.driver_id==user.employee_id)
+    return [job_data(x) for x in db.scalars(q).all()]
+@app.post("/api/v1/jobs",status_code=201)
+def create_job(payload:JobInput,db:DB,user:Annotated[User,Depends(require_permission("jobs.create"))]):
+    j=Job(id=f"JOB-{datetime.now():%Y%m%d}-{secrets.token_hex(3).upper()}",**payload.model_dump());db.add(j);audit(db,user,"CREATE","JOB",j.id);db.commit();return job_data(j)
+@app.get("/api/v1/jobs/{job_id}")
+def get_job(job_id:str,db:DB,user:Annotated[User,Depends(get_current_user)]):
+    j=db.get(Job,job_id)
+    if not j: raise HTTPException(404,"Job not found")
+    if "jobs.view.all" not in {p.code for p in user.role.permissions} and not own_job(j,user): raise HTTPException(403,"Not your job")
+    return job_data(j)
+@app.post("/api/v1/jobs/{job_id}/cancel")
+def cancel_job(job_id:str,db:DB,user:Annotated[User,Depends(require_permission("jobs.cancel"))]):
+    j=db.get(Job,job_id)
+    if not j: raise HTTPException(404,"Job not found")
+    if j.status in [JobStatus.COMPLETED,JobStatus.CANCELLED]: raise HTTPException(409,"Job cannot be cancelled")
+    if j.vehicle_id:
+        v=db.get(Vehicle,j.vehicle_id);v.status=VehicleStatus.AVAILABLE;v.ready_from=j.origin;v.current_destination=None
+    j.status=JobStatus.CANCELLED;audit(db,user,"CANCEL","JOB",j.id);db.commit();return job_data(j)
 
 @app.get("/api/v1/dispatch/candidates")
-def dispatch_candidates(
-    db: DbSession,
-    origin: Annotated[str, Query()] = "",
-    employee_name: Annotated[str, Query()] = "",
-    vehicle_plate: Annotated[str, Query()] = "",
-    status: Annotated[VehicleStatus | None, Query()] = None,
-    _: Annotated[User, Depends(require_permission("dispatch.view"))] = None,
-) -> dict:
-    query = select(Vehicle, Employee).join(Employee, Vehicle.employee_id == Employee.id, isouter=True)
-    if status:
-        query = query.where(Vehicle.status == status)
-    if origin:
-        query = query.where((Vehicle.ready_from == origin) | (Vehicle.current_destination == origin))
-    if employee_name:
-        query = query.where(Employee.name.ilike(f"%{employee_name}%"))
-    if vehicle_plate:
-        query = query.where(Vehicle.plate.ilike(f"%{vehicle_plate}%"))
+def candidates(db:DB,origin:str="",employee_name:str="",vehicle_plate:str="",user:Annotated[User,Depends(require_permission("dispatch.view"))]=None):
+    q=select(Vehicle).options(selectinload(Vehicle.employee)).where(Vehicle.status.in_([VehicleStatus.AVAILABLE,VehicleStatus.AVAILABLE_RETURN]))
+    rows=[]
+    for v in db.scalars(q).all():
+        if origin and not ((v.status==VehicleStatus.AVAILABLE and v.ready_from==origin) or (v.status==VehicleStatus.AVAILABLE_RETURN and v.current_destination==origin)): continue
+        if employee_name and employee_name.lower() not in v.employee.name.lower(): continue
+        if vehicle_plate and vehicle_plate.lower() not in v.plate.lower(): continue
+        rows.append({"vehicle_id":v.id,"vehicle_plate":v.plate,"employee_id":v.employee_id,"employee_name":v.employee.name,"operational_status":v.status.value,"ready_from":v.ready_from,"current_destination":v.current_destination,"candidate_type":"return" if v.status==VehicleStatus.AVAILABLE_RETURN else "available"})
+    return {"items":rows,"total":len(rows)}
+@app.post("/api/v1/dispatch/assign")
+def assign(payload:AssignInput,db:DB,user:Annotated[User,Depends(require_permission("dispatch.assign"))]):
+    with db.begin_nested():
+        j=db.scalar(select(Job).where(Job.id==payload.job_id).with_for_update()); v=db.scalar(select(Vehicle).where(Vehicle.id==payload.vehicle_id).with_for_update()); e=db.get(Employee,payload.employee_id)
+        if not j or not v or not e: raise HTTPException(404,"Job, driver, or vehicle not found")
+        if j.status!=JobStatus.CREATED: raise HTTPException(409,"Job is not available")
+        if not e.is_active or v.employee_id!=e.id or v.status not in [VehicleStatus.AVAILABLE,VehicleStatus.AVAILABLE_RETURN]: raise HTTPException(409,"Driver or vehicle is not available")
+        j.driver_id=e.id;j.vehicle_id=v.id;j.assigned_at=datetime.now(timezone.utc);j.status=JobStatus.ASSIGNED;v.status=VehicleStatus.BUSY;v.ready_from=None;audit(db,user,"ASSIGN","JOB",j.id,{"vehicle_id":v.id,"driver_id":e.id})
+    db.commit();return job_data(j)
 
-    results = [candidate_response(vehicle, employee) for vehicle, employee in db.execute(query).all() if is_candidate(vehicle, origin)]
-    return {"items": results, "total": len(results)}
-
-
-def is_candidate(vehicle: Vehicle, origin: str) -> bool:
-    if not origin:
-        return True
-    if vehicle.status == VehicleStatus.AVAILABLE:
-        return vehicle.ready_from == origin
-    if vehicle.status == VehicleStatus.AVAILABLE_RETURN:
-        return vehicle.current_destination == origin
-    return False
-
-
-def apply_candidate_filters(query, status: VehicleStatus | None, origin: str, employee_name: str, vehicle_plate: str):
-    filters = []
-    if status:
-        filters.append(Vehicle.status == status)
-    if origin:
-        filters.append((Vehicle.ready_from == origin) | (Vehicle.current_destination == origin))
-    if employee_name:
-        filters.append(Employee.name.ilike(f"%{employee_name}%"))
-    if vehicle_plate:
-        filters.append(Vehicle.plate.ilike(f"%{vehicle_plate}%"))
-    return query.where(*filters)
-
-
-def candidate_response(vehicle: Vehicle, employee: Employee | None) -> dict:
-    return {
-        "vehicle_id": vehicle.id,
-        "vehicle_plate": vehicle.plate,
-        "employee_id": employee.id if employee else None,
-        "employee_name": employee.name if employee else "ยังไม่มอบหมาย",
-        "operational_status": vehicle.status.value,
-        "ready_from": vehicle.ready_from,
-        "current_destination": vehicle.current_destination,
-        "candidate_type": "return" if vehicle.status == VehicleStatus.AVAILABLE_RETURN else "available",
-    }
-
+@app.get("/api/v1/my/jobs")
+def my_jobs(db:DB,user:Annotated[User,Depends(require_permission("jobs.view.own"))]): return [job_data(x) for x in db.scalars(select(Job).where(Job.driver_id==user.employee_id)).all()]
+@app.post("/api/v1/my/check-in")
+def check_in(db:DB,user:Annotated[User,Depends(require_permission("availability.check_in"))]): audit(db,user,"CHECK_IN","EMPLOYEE",user.employee_id);db.commit();return {"ok":True}
+@app.post("/api/v1/my/ready")
+def ready(payload:StatusInput,db:DB,user:Annotated[User,Depends(require_permission("availability.update.own"))]):
+    v=db.scalar(select(Vehicle).where(Vehicle.employee_id==user.employee_id,Vehicle.is_primary==True));
+    if not v or v.status==VehicleStatus.MAINTENANCE: raise HTTPException(409,"Vehicle cannot be set ready")
+    v.status=VehicleStatus.AVAILABLE;v.ready_from=payload.ready_from;v.current_destination=None;audit(db,user,"READY","VEHICLE",v.id);db.commit();return {"status":v.status.value}
+@app.post("/api/v1/my/not-ready")
+def not_ready(db:DB,user:Annotated[User,Depends(require_permission("availability.update.own"))]):
+    v=db.scalar(select(Vehicle).where(Vehicle.employee_id==user.employee_id,Vehicle.is_primary==True));
+    if not v or v.status==VehicleStatus.BUSY: raise HTTPException(409,"Vehicle cannot be set not ready")
+    v.status=VehicleStatus.NOT_READY;v.ready_from=None;audit(db,user,"NOT_READY","VEHICLE",v.id);db.commit();return {"status":v.status.value}
+@app.post("/api/v1/my/jobs/{job_id}/start")
+def start(job_id:str,db:DB,user:Annotated[User,Depends(require_permission("jobs.start.own"))]):
+    j=db.get(Job,job_id)
+    if not j or not own_job(j,user): raise HTTPException(404,"Assigned job not found")
+    if j.status!=JobStatus.ASSIGNED: raise HTTPException(409,"Job cannot be started")
+    j.status=JobStatus.IN_PROGRESS;j.started_at=datetime.now(timezone.utc);audit(db,user,"START","JOB",j.id);db.commit();return job_data(j)
+@app.patch("/api/v1/my/jobs/{job_id}/destination")
+def change_destination(job_id:str,payload:DestinationInput,db:DB,user:Annotated[User,Depends(require_permission("jobs.change_destination.own"))]):
+    j=db.get(Job,job_id)
+    if not j or not own_job(j,user) or j.status!=JobStatus.IN_PROGRESS: raise HTTPException(409,"Active assigned job required")
+    j.destination=payload.destination;audit(db,user,"CHANGE_DESTINATION","JOB",j.id);db.commit();return job_data(j)
+@app.post("/api/v1/my/jobs/{job_id}/close")
+def close(job_id:str,db:DB,user:Annotated[User,Depends(require_permission("jobs.close.own"))]):
+    j=db.get(Job,job_id)
+    if not j or not own_job(j,user) or j.status!=JobStatus.IN_PROGRESS: raise HTTPException(409,"In-progress assigned job required")
+    j.status=JobStatus.COMPLETED;j.completed_at=datetime.now(timezone.utc);v=db.get(Vehicle,j.vehicle_id);v.status=VehicleStatus.AVAILABLE_RETURN if j.job_type==JobType.ONE_WAY else VehicleStatus.AVAILABLE;v.current_destination=j.destination if j.job_type==JobType.ONE_WAY else None;v.ready_from=j.destination if j.job_type==JobType.ROUND_TRIP else None;audit(db,user,"CLOSE","JOB",j.id);db.commit();return job_data(j)
 
 @app.get("/api/v1/employees")
-def employees(db: DbSession, _: Annotated[User, Depends(require_permission("employees.view.all"))]) -> list[dict]:
-    rows = db.execute(select(Employee, Vehicle).join(Vehicle, Vehicle.employee_id == Employee.id, isouter=True)).all()
-    return [
-        {
-            "id": employee.id,
-            "name": employee.name,
-            "position": employee.position,
-            "phone": employee.phone,
-            "vehicle_plate": vehicle.plate if vehicle else None,
-            "status": vehicle.status.value if vehicle else "NOT_READY",
-        }
-        for employee, vehicle in rows
-    ]
+def employees(db:DB,user:Annotated[User,Depends(require_permission("employees.view.all"))]): return [{"id":e.id,"name":e.name,"position":e.position,"phone":e.phone,"is_active":e.is_active} for e in db.scalars(select(Employee)).all()]
+@app.get("/api/v1/vehicles")
+def vehicles(db:DB,user:Annotated[User,Depends(require_permission("vehicles.view.all"))]): return [{"id":v.id,"plate":v.plate,"employee_id":v.employee_id,"status":v.status.value,"is_primary":v.is_primary,"ready_from":v.ready_from,"current_destination":v.current_destination} for v in db.scalars(select(Vehicle)).all()]
+@app.get("/api/v1/roles")
+def roles(db:DB,user:Annotated[User,Depends(require_permission("roles.view"))]): return [{"id":r.id,"name":r.name,"description":r.description,"users_count":len(r.users),"permissions":[p.code for p in r.permissions]} for r in db.scalars(select(Role).options(selectinload(Role.permissions),selectinload(Role.users))).all()]
+@app.get("/api/v1/permissions")
+def permissions(db:DB,user:Annotated[User,Depends(require_permission("permissions.view"))]): return [{"code":p.code,"module":p.module,"action":p.action,"scope":p.scope,"description":p.description} for p in db.scalars(select(Permission).order_by(Permission.code)).all()]
+@app.get("/api/v1/audit-logs")
+def logs(db:DB,user:Annotated[User,Depends(require_permission("audit_logs.view"))]): return [{"id":x.id,"action":x.action,"entity":x.entity,"entity_id":x.entity_id,"created_at":x.created_at.isoformat()} for x in db.scalars(select(AuditLog).order_by(AuditLog.created_at.desc()).limit(100)).all()]

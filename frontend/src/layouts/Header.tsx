@@ -1,9 +1,10 @@
 import { Bell, ChevronRight, LogOut, Menu } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
 
 export function Header({ onMenuOpen }: Readonly<{ onMenuOpen: () => void }>) {
   const navigation = useNavigate();
+  const { user, signOut } = useAuth();
   return (
     <header className="topbar">
       <button
@@ -24,10 +25,10 @@ export function Header({ onMenuOpen }: Readonly<{ onMenuOpen: () => void }>) {
           <i />
         </button>
         <div className="user">
-          <div className="avatar">SC</div>
+          <div className="avatar">{user?.name.slice(0, 2).toUpperCase()}</div>
           <div>
-            <b>Somchai Chai Dee</b>
-            <span>Manager</span>
+            <b>{user?.name}</b>
+            <span>{user?.role.name}</span>
           </div>
         </div>
         <button
@@ -35,7 +36,7 @@ export function Header({ onMenuOpen }: Readonly<{ onMenuOpen: () => void }>) {
           title="Sign out"
           aria-label="Sign out"
           onClick={() => {
-            logout();
+            void signOut();
             navigation("/login", { replace: true });
           }}
         >

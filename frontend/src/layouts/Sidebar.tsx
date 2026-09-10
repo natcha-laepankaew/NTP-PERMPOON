@@ -10,13 +10,15 @@ import {
   X,
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
-import { hasRole } from "../services/api";
+import { useAuth } from "../contexts/AuthContext";
+import { hasAllowedRole, ROLE_ACCESS, type RoleName } from "../auth/roles";
 
 export function Sidebar({
   mobileOpen,
   onClose,
 }: Readonly<{ mobileOpen: boolean; onClose: () => void }>) {
-  const isSuperAdmin = hasRole("SUPER_ADMIN");
+  const { user } = useAuth();
+  const userRole = user?.role.name;
   return (
     <aside className={`sidebar ${mobileOpen ? "sidebar-open" : ""}`}>
       <div className="brand">
@@ -43,24 +45,31 @@ export function Sidebar({
           icon={<LayoutDashboard size={18} />}
           label="Dashboard"
           onClick={onClose}
+          userRole={userRole}
         />
         <NavItem
           to="/dispatch"
           icon={<Activity size={18} />}
           label="Dispatch Board"
           onClick={onClose}
+          allowedRoles={ROLE_ACCESS.operations}
+          userRole={userRole}
         />
         <NavItem
           to="/jobs"
           icon={<ClipboardList size={18} />}
           label="Jobs"
           onClick={onClose}
+          allowedRoles={ROLE_ACCESS.operations}
+          userRole={userRole}
         />
         <NavItem
           to="/history"
           icon={<Boxes size={18} />}
           label="Job History"
           onClick={onClose}
+          allowedRoles={ROLE_ACCESS.operations}
+          userRole={userRole}
         />
         <p className="nav-label space-top">RESOURCES</p>
         <NavItem
@@ -68,35 +77,40 @@ export function Sidebar({
           icon={<Users size={18} />}
           label="Employees"
           onClick={onClose}
+          allowedRoles={ROLE_ACCESS.operations}
+          userRole={userRole}
         />
         <NavItem
           to="/vehicles"
           icon={<CarFront size={18} />}
           label="Vehicles"
           onClick={onClose}
+          allowedRoles={ROLE_ACCESS.operations}
+          userRole={userRole}
         />
         <p className="nav-label space-top">SYSTEM</p>
-        {isSuperAdmin && (
-          <NavItem
-            to="/settings/roles-permissions"
-            icon={<Settings2 size={18} />}
-            label="Roles & Permissions"
-            onClick={onClose}
-          />
-        )}
-        {isSuperAdmin && (
-          <NavItem
-            to="/audit-logs"
-            icon={<ShieldCheck size={18} />}
-            label="Audit Logs"
-            onClick={onClose}
-          />
-        )}
+        <NavItem
+          to="/roles-permissions"
+          icon={<Settings2 size={18} />}
+          label="Roles & Permissions"
+          onClick={onClose}
+          allowedRoles={ROLE_ACCESS.administrator}
+          userRole={userRole}
+        />
+        <NavItem
+          to="/audit-logs"
+          icon={<ShieldCheck size={18} />}
+          label="Audit Logs"
+          onClick={onClose}
+          allowedRoles={ROLE_ACCESS.administrator}
+          userRole={userRole}
+        />
         <NavItem
           to="/settings"
           icon={<Settings2 size={18} />}
           label="Settings"
           onClick={onClose}
+          userRole={userRole}
         />
       </nav>
       <div className="sidebar-foot">
@@ -111,12 +125,17 @@ function NavItem({
   icon,
   label,
   onClick,
+  allowedRoles = ROLE_ACCESS.all,
+  userRole,
 }: Readonly<{
   to: string;
   icon: React.ReactNode;
   label: string;
   onClick: () => void;
+  allowedRoles?: readonly RoleName[];
+  userRole?: RoleName;
 }>) {
+  if (!hasAllowedRole(userRole, allowedRoles)) return null;
   return (
     <NavLink
       to={to}
