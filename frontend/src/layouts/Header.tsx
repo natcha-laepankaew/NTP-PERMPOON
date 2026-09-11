@@ -24,13 +24,13 @@ export function Header({ onMenuOpen }: Readonly<{ onMenuOpen: () => void }>) {
           <Bell size={19} />
           <i />
         </button>
-        <div className="user">
+        <button className="user user-profile-button" onClick={() => navigation("/profile")} aria-label="Open my profile">
           <div className="avatar">{user?.name.slice(0, 2).toUpperCase()}</div>
           <div>
             <b>{user?.name}</b>
             <span>{user?.role.name}</span>
           </div>
-        </div>
+        </button>
         <button
           className="icon-button"
           title="Sign out"

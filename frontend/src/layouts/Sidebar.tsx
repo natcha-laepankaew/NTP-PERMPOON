@@ -4,6 +4,7 @@ import {
   CarFront,
   ClipboardList,
   LayoutDashboard,
+  UserRound,
   Settings2,
   ShieldCheck,
   Users,
@@ -103,6 +104,13 @@ export function Sidebar({
           label="Audit Logs"
           onClick={onClose}
           allowedRoles={ROLE_ACCESS.administrator}
+          userRole={userRole}
+        />
+        <NavItem
+          to="/profile"
+          icon={<UserRound size={18} />}
+          label="My Profile"
+          onClick={onClose}
           userRole={userRole}
         />
         <NavItem

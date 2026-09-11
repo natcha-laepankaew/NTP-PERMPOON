@@ -7,12 +7,12 @@ PERMISSIONS = [
  "dashboard.view","users.view","users.create","users.update","users.deactivate","roles.view","roles.manage","permissions.view","permissions.manage",
  "employees.view.all","employees.view.own","employees.create","employees.update","employees.deactivate","vehicles.view.all","vehicles.view.own","vehicles.create","vehicles.update","vehicles.deactivate",
  "availability.view.all","availability.view.own","availability.update.all","availability.update.own","availability.check_in","jobs.view.all","jobs.view.own","jobs.create","jobs.update","jobs.cancel","jobs.start.own","jobs.close.own","jobs.change_destination.own",
- "dispatch.view","dispatch.assign","dispatch.reassign","dispatch.cancel","evidence.view.all","evidence.view.own","evidence.upload.own","job_history.view.all","job_history.view.own","reports.view","reports.export","settings.view","settings.manage","audit_logs.view","profile.view.own","profile.complete.own","profile.update.all"]
+ "dispatch.view","dispatch.assign","dispatch.reassign","dispatch.cancel","evidence.view.all","evidence.view.own","evidence.upload.own","job_history.view.all","job_history.view.own","reports.view","reports.export","settings.view","settings.manage","audit_logs.view","profile.view.own","profile.complete.own","profile.update.own","profile.update.all"]
 ROLE_CODES = {
  "ADMINISTRATOR": set(PERMISSIONS),
  "ADMIN": {p for p in PERMISSIONS if p not in {"roles.view","roles.manage","permissions.view","permissions.manage","settings.view","settings.manage","audit_logs.view","users.create","users.update","users.deactivate"}},
  "MANAGER": {"dashboard.view","employees.view.all","vehicles.view.all","availability.view.all","jobs.view.all","dispatch.view","evidence.view.all","job_history.view.all","reports.view","profile.view.own"},
- "DRIVER": {"dashboard.view","employees.view.own","vehicles.view.own","availability.view.own","availability.update.own","availability.check_in","jobs.view.own","jobs.start.own","jobs.close.own","jobs.change_destination.own","evidence.view.own","evidence.upload.own","job_history.view.own","profile.view.own","profile.complete.own"},
+ "DRIVER": {"dashboard.view","employees.view.own","vehicles.view.own","availability.view.own","availability.update.own","availability.check_in","jobs.view.own","jobs.start.own","jobs.close.own","jobs.change_destination.own","evidence.view.own","evidence.upload.own","job_history.view.own","profile.view.own","profile.complete.own","profile.update.own"},
 }
 
 def seed_database(db: Session) -> None:

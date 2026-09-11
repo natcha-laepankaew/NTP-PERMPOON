@@ -923,6 +923,52 @@ select {
 button {
   cursor: pointer;
 }
+.user-profile-button {
+  border: 0;
+  background: transparent;
+  text-align: left;
+}
+.profile-layout {
+  display: grid;
+  grid-template-columns: minmax(280px, 0.9fr) minmax(390px, 1.1fr);
+  gap: 18px;
+}
+.profile-summary-card, .profile-details-card { overflow: hidden; }
+.profile-cover { height: 92px; background: linear-gradient(120deg, #071143, #263c95); }
+.profile-summary-content { padding: 0 24px 24px; }
+.profile-avatar { width: 76px; height: 76px; display: grid; place-items: center; margin-top: -38px; border: 4px solid #fff; border-radius: 50%; background: #fff100; color: #111b61; font: 700 24px "Space Grotesk"; }
+.profile-name-row { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin: 16px 0 20px; }
+.profile-name-row h2, .profile-section-heading h2 { margin: 0; color: #171b32; font: 600 21px "Space Grotesk"; }
+.profile-name-row p { color: #81889a; font-size: 12px; margin: 5px 0 0; }
+.profile-verified { display: inline-flex; align-items: center; gap: 5px; color: #147552; background: #eaf8f2; border-radius: 999px; padding: 6px 9px; font-size: 10px; font-weight: 700; white-space: nowrap; }
+.profile-facts { margin: 0; }
+.profile-facts > div { border-top: 1px solid #eff0f4; padding: 13px 0; }
+.profile-facts dt { display: flex; align-items: center; gap: 7px; color: #8b92a4; font-size: 10px; }
+.profile-facts dt svg { color: #6575b4; }
+.profile-facts dd { color: #30364d; font-size: 12px; font-weight: 600; margin: 6px 0 0 22px; overflow-wrap: anywhere; }
+.profile-details-card { padding: 24px; }
+.profile-section-heading { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid #eff0f4; padding-bottom: 18px; color: #6575b4; }
+.profile-section-heading .eyebrow { margin: 0 0 6px; }
+.profile-form { padding-top: 20px; }
+.profile-field { display: block; margin-bottom: 17px; color: #555d70; font-size: 11px; font-weight: 600; }
+.profile-field > span { display: flex; align-items: center; gap: 7px; margin-bottom: 7px; }
+.profile-field svg { color: #6575b4; }
+.profile-field input, .profile-field textarea { width: 100%; border: 1px solid #dfe2ea; border-radius: 6px; background: #fff; color: #252a42; font-size: 12px; outline: 0; padding: 11px 12px; resize: vertical; }
+.profile-field input:focus, .profile-field textarea:focus { border-color: #6272c3; box-shadow: 0 0 0 3px rgba(98, 114, 195, .1); }
+.profile-save { margin-top: 4px; }
+.profile-save:disabled { cursor: wait; opacity: .7; }
+.profile-form-message { border-radius: 6px; font-size: 11px; margin: 0 0 14px; padding: 10px 12px; }
+.profile-form-message.error { background: #ffebed; color: #c6404e; }
+.profile-form-message.success { background: #eaf8f2; color: #147552; }
+.profile-admin-note { display: flex; gap: 12px; align-items: flex-start; padding: 24px 0; color: #5868ab; }
+.profile-admin-note strong, .profile-admin-note span { display: block; }
+.profile-admin-note strong { color: #30364d; font-size: 13px; }
+.profile-admin-note span { color: #858c9f; font-size: 11px; line-height: 1.6; margin-top: 5px; }
+.profile-vehicle { display: flex; align-items: center; gap: 10px; border-top: 1px solid #eff0f4; padding-top: 17px; color: #6575b4; }
+.profile-vehicle div { flex: 1; }.profile-vehicle span, .profile-vehicle strong { display: block; }.profile-vehicle span { color: #8b92a4; font-size: 10px; }.profile-vehicle strong { color: #30364d; font-size: 13px; margin-top: 3px; }.profile-vehicle em { color: #357561; background: #eaf8f2; border-radius: 999px; font-size: 9px; font-style: normal; font-weight: 700; padding: 5px 7px; }
+.profile-loading { min-height: 180px; display: grid; place-items: center; color: #858c9f; font-size: 13px; }.profile-error { color: #c6404e; }
+@media (max-width: 900px) { .profile-layout { grid-template-columns: 1fr; } }
+@media (max-width: 500px) { .profile-summary-content, .profile-details-card { padding-left: 17px; padding-right: 17px; }.profile-name-row { align-items: flex-start; flex-direction: column; }.profile-verified { margin-top: -8px; } }
 .app-shell {
   min-height: 100vh;
   display: flex;

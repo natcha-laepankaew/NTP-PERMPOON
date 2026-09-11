@@ -32,6 +32,16 @@ class DestinationInput(BaseModel): destination:str=Field(min_length=1,max_length
 
 def audit(db,actor,action,entity,entity_id=None,meta=None): db.add(AuditLog(id="AUD-"+secrets.token_hex(12),actor_user_id=actor.id if actor else None,action=action,entity=entity,entity_id=entity_id,metadata_json=json.dumps(meta or {})))
 def user_data(user): return {"id":user.id,"email":user.email,"name":user.employee.name if user.employee else user.email.split("@")[0],"role":{"id":user.role.id,"name":user.role.name},"permissions":[p.code for p in user.role.permissions],"profile_completed":user.profile_completed}
+def profile_data(user, vehicle=None):
+    return {
+        **user_data(user),
+        "employee_id": user.employee.id if user.employee else None,
+        "position": user.employee.position if user.employee else None,
+        "phone": user.employee.phone if user.employee else None,
+        "address": user.employee.address if user.employee else None,
+        "vehicle": {"plate": vehicle.plate, "status": vehicle.status.value} if vehicle else None,
+        "last_login_at": user.last_login_at.isoformat() if user.last_login_at else None,
+    }
 def job_data(j): return {"id":j.id,"source":j.source.value,"origin":j.origin,"destination":j.destination,"pickup_date":j.pickup_date,"pickup_time":j.pickup_time,"job_type":j.job_type.value,"status":j.status.value,"driver_id":j.driver_id,"vehicle_id":j.vehicle_id}
 def own_job(job,user): return bool(user.employee_id and job.driver_id==user.employee_id)
 
@@ -56,6 +66,22 @@ def complete_profile(payload:ProfileInput,db:DB,user:Annotated[User,Depends(requ
     if user.role.name!="DRIVER" or user.profile_completed: raise HTTPException(409,"Profile cannot be completed again")
     if not user.employee: raise HTTPException(400,"Driver account has no employee")
     user.employee.phone=payload.phone; user.employee.address=payload.address; user.profile_completed=True; user.profile_completed_at=datetime.now(timezone.utc); audit(db,user,"COMPLETE_PROFILE","USER",user.id);db.commit();return {"profile_completed":True}
+
+@app.get("/api/v1/profile/me")
+def profile_me(db:DB,user:Annotated[User,Depends(require_permission("profile.view.own"))]):
+    vehicle = db.scalar(select(Vehicle).where(Vehicle.employee_id == user.employee_id, Vehicle.is_primary == True)) if user.employee_id else None
+    return profile_data(user, vehicle)
+
+@app.patch("/api/v1/profile/me")
+def update_own_profile(payload:ProfileInput, db:DB, user:Annotated[User,Depends(require_permission("profile.update.own"))]):
+    if user.role.name != "DRIVER" or not user.employee:
+        raise HTTPException(403, "Only driver contact details can be updated here")
+    user.employee.phone = payload.phone
+    user.employee.address = payload.address
+    audit(db, user, "UPDATE_PROFILE", "USER", user.id)
+    db.commit()
+    vehicle = db.scalar(select(Vehicle).where(Vehicle.employee_id == user.employee_id, Vehicle.is_primary == True))
+    return profile_data(user, vehicle)
 
 @app.get("/api/v1/dashboard")
 def dashboard(db:DB,user:Annotated[User,Depends(require_permission("dashboard.view"))]):

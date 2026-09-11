@@ -12,6 +12,7 @@ import { ProtectedRoute, RoleRoute } from "../components/ProtectedRoute";
 import { RolesPermissionsPage } from "../pages/RolesPermissionsPage";
 import { AuditLogsPage } from "../pages/AuditLogsPage";
 import { CompleteProfilePage } from "../pages/CompleteProfilePage";
+import { ProfilePage } from "../pages/ProfilePage";
 import { ROLE_ACCESS } from "../auth/roles";
 
 export function AppRouter() {
@@ -22,6 +23,7 @@ export function AppRouter() {
         <Route path="/complete-profile" element={<CompleteProfilePage />} />
         <Route element={<MainLayout />}>
           <Route path="/" element={<DashboardPage />} />
+          <Route path="/profile" element={<ProfilePage />} />
           <Route element={<RoleRoute allowedRoles={ROLE_ACCESS.operations} />}>
             <Route path="/dispatch" element={<DispatchPage />} />
             <Route path="/history" element={<HistoryPage />} />

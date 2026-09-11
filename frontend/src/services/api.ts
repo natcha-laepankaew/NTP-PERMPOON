@@ -160,3 +160,25 @@ export async function completeProfile(payload: {
   );
   return data;
 }
+
+export type UserProfile = CurrentUser & {
+  employee_id: string | null;
+  position: string | null;
+  phone: string | null;
+  address: string | null;
+  vehicle: { plate: string; status: VehicleStatus } | null;
+  last_login_at: string | null;
+};
+
+export async function getMyProfile() {
+  const { data } = await api.get<UserProfile>("/profile/me");
+  return data;
+}
+
+export async function updateMyProfile(payload: {
+  phone: string;
+  address: string;
+}) {
+  const { data } = await api.patch<UserProfile>("/profile/me", payload);
+  return data;
+}
