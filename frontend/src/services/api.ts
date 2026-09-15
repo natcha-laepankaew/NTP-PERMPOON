@@ -1,5 +1,5 @@
 import axios from "axios";
-import type { RoleName } from "../auth/roles";
+import type { Permission, RoleName } from "../auth/roles";
 
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:8000/api/v1",
@@ -8,7 +8,11 @@ export const api = axios.create({
 
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("ntp_access_token");
-  if (token) config.headers.Authorization = `Bearer ${token}`;
+
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+
   return config;
 });
 
@@ -18,12 +22,19 @@ export type AuthResponse = {
   profile_completed: boolean;
   user: CurrentUser;
 };
+
 export type CurrentUser = {
   id: string;
   email: string;
   name: string;
-  role: { id: string; name: RoleName };
-  permissions: string[];
+
+  role: {
+    id: string;
+    name: RoleName;
+  };
+
+  permissions: Permission[];
+
   profile_completed: boolean;
 };
 
@@ -43,7 +54,6 @@ export function logout() {
 export function isAuthenticated() {
   return Boolean(localStorage.getItem("ntp_access_token"));
 }
-
 
 export type VehicleStatus =
   | "AVAILABLE"
